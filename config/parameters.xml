@@ -1,0 +1,35 @@
+<config>
+	<PIDAConnection>
+		<PIDAServerName>EC2AMAZ-HBQMGMQ</PIDAServerName>
+		<PIDAServerUser>pinnovartic\Administrator</PIDAServerUser>
+		<PIDAServerUserPass>P1nn0v4rt1c2025!</PIDAServerUserPass>
+	</PIDAConnection>
+	<AFConnection>
+		<AFServerName>EC2AMAZ-HBQMGMQ</AFServerName>
+		<AFServerUser>pinnovartic\Administrator</AFServerUser>
+		<AFServerUserPass>P1nn0v4rt1c2025!</AFServerUserPass>
+		<AFDataBase>Stale Bad App</AFDataBase>
+		<AFRoot>Results</AFRoot>
+		<AFResultTable>Stale Bad Results</AFResultTable>
+	</AFConnection>
+	<StaleConfig>
+		<StaleStartTime>*-1000d</StaleStartTime>
+		<StaleEndTime>*-30d</StaleEndTime>
+		<OutputTag>StaleBadApp - Stale Tags</OutputTag>
+	</StaleConfig>
+	<BadConfig>
+		<Status>
+			<Value>Pt Created</Value>
+			<OutputTag>EC2AMAZ-HBQMGMQ - Pt Created Tags</OutputTag>
+		</Status>
+		<Status>
+			<Value>Bad</Value>
+			<OutputTag>EC2AMAZ-HBQMGMQ - Bad Tags</OutputTag>
+		</Status>
+	</BadConfig>
+	<OverallResults>
+		<TotalTags>EC2AMAZ-HBQMGMQ - Total Tags</TotalTags>
+		<TotalStaleTags>EC2AMAZ-HBQMGMQ - Total Stale Tags</TotalStaleTags>
+		<TotalBadTags>EC2AMAZ-HBQMGMQ - Total Bad Tags</TotalBadTags>
+	</OverallResults>
+</config>
