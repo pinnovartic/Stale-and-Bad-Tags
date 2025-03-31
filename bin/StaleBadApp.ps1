@@ -96,7 +96,9 @@ function CheckStaleBadTags{
     
     #AF Table Cleaning    
     $AF_Tables = $AFDB.Tables
-    $AF_Tables["Stale Bad Results"].Table.Rows.Clear()
+    if ($AF_Tables["Stale Bad Results"].Table.Rows.Count -gt 0){
+        $AF_Tables["Stale Bad Results"].Table.Rows.Clear()
+    }
 
     # Bad Status list XML Reading
     $xmlConfig.Config.BadConfig.Status | ForEach-Object {
@@ -113,11 +115,22 @@ function CheckStaleBadTags{
     $TimeLimit_StartTime = ConvertFrom-AFRelativeTime -RelativeTime $XML_StaleStartTime
     $TimeLimit_StartTime = $TimeLimit_StartTime.ToLocalTime()
     $TimeLimit_EndTime = ConvertFrom-AFRelativeTime -RelativeTime $XML_StaleEndTime
-    $TimeLimit_EndTime = $TimeLimit_EndTime.ToLocalTime()
-    
+    $TimeLimit_EndTime = $TimeLimit_EndTime.ToLocalTime()   
+
+
     #PI Tag check
     $PIPoints = Get-PIPoint -Name "*" -Connection $PIDA_Connection
+    $LastTimeQuery = $TimeQuery
+
     $PIPoints | ForEach-Object {
+
+        $CurrTime = Get-Date
+
+        If ($LastTimeQuery -lt $CurrTime){
+            $adv = [math]::round(100*$N_Tags/$PIPoints.Count,2)
+            Write-Host $adv "%"
+            $LastTimeQuery = $CurrTime.AddSeconds(5)
+        }
         $N_Tags = $N_Tags + 1
         try{         
             $TagName = $_.Point.Name
@@ -128,13 +141,13 @@ function CheckStaleBadTags{
             $LastArcVal_Status = [boolean]$PISnapshotValue.IsGood             
             #Stale
 
-            $IsStale = $fAlse
-            $IsBad = $fAlse
-            $IsStaleBad = $fAlse
+            $IsStale = $false
+            $IsBad = $false
+            $IsStaleBad = $false
 
             If ($LastArcVal_TS -gt $TimeLimit_StartTime -and $LastArcVal_TS -lt $TimeLimit_EndTime) {
                 #Stale
-                Write-Host "Stale"
+                #Write-Host "Stale"
                 $IsStale = $true
 				If ($N_Tags_Stale -eq 0){
 					"TagName,TimeStamp,Value" | Out-File $CurrentOutputStaleFile -Append
@@ -144,6 +157,7 @@ function CheckStaleBadTags{
                     $TagName + "," +  $LastArcVal_TS + "," + $LastArcVal_Val | Out-File $CurrentOutputStaleFile -Append
                 }else{
                     #Bad Value
+                    #Write-Host "Bad"
                     $IsBad = $true
                     $stateSetID = $LastArcVal_Val.StateSet
                     $stateID = $LastArcVal_Val.State
@@ -162,8 +176,13 @@ function CheckStaleBadTags{
                     }
                 }
             }else{
-                If (NOT($LastArcVal_Status)) {
+                If ($LastArcVal_Status) {
+                    #Do Nothing
+                }
+                else {
+
                     #Bad Value
+                    #Write-Host "Bad"
                     $IsBad = $true
                     $stateSetID = $LastArcVal_Val.StateSet
                     $stateID = $LastArcVal_Val.State
@@ -185,13 +204,13 @@ function CheckStaleBadTags{
             #Add value to the Results PI AF Table
             If ($IsStale){
                 If ($IsBad){
-                    $AF_Tables["Stale Bad Results"].Table.Rows.Add($XML_PIDAServer,$TagName,$resultState,$LastArcVal_TS,"X","X")
+                    $AF_Tables["Stale Bad Results"].Table.Rows.Add($XML_PIDAServer,$TagName,$resultState,$LastArcVal_TS,"X","X") | Out-Null
                 }else{
-                    $AF_Tables["Stale Bad Results"].Table.Rows.Add($XML_PIDAServer,$TagName,$LastArcVal_Val,$LastArcVal_TS,"X","")
+                    $AF_Tables["Stale Bad Results"].Table.Rows.Add($XML_PIDAServer,$TagName,$LastArcVal_Val,$LastArcVal_TS,"X","") | Out-Null
                 }
             }else{
                 If ($IsBad){
-                    $AF_Tables["Stale Bad Results"].Table.Rows.Add($XML_PIDAServer,$TagName,$resultState,$LastArcVal_TS,"","X")
+                    $AF_Tables["Stale Bad Results"].Table.Rows.Add($XML_PIDAServer,$TagName,$resultState,$LastArcVal_TS,"","X") | Out-Null
                 }
             }                    
         }
@@ -246,13 +265,13 @@ function CheckStaleBadTags{
     $ChildAttribute_LastCheck = Get-AFAttribute -AFElement $AFElement -Name "Last Check"   
     $AFOutputStaleFile = New-Object OSIsoft.AF.Asset.AFFile
     If (Test-Path $CurrentOutputStaleFile){
-    $AFOutputStaleFile.upload($CurrentOutputStaleFile)
-    $ChildAttribute_StaleOutputFile.SetValue($AFOutputStaleFile)
+        $AFOutputStaleFile.upload($CurrentOutputStaleFile)
+        $ChildAttribute_StaleOutputFile.SetValue($AFOutputStaleFile)
     }
     $AFOutputBadFile = New-Object OSIsoft.AF.Asset.AFFile
     If (Test-Path $CurrentOutputBadFile){
-    $AFOutputBadFile.upload($CurrentOutputBadFile)
-    $ChildAttribute_BadOutputFile.SetValue($AFOutputBadFile)
+        $AFOutputBadFile.upload($CurrentOutputBadFile)
+        $ChildAttribute_BadOutputFile.SetValue($AFOutputBadFile)
     }
     $LastCheckAF = New-Object OSIsoft.AF.Asset.AFValue
     $LastCheckAF.Value = $TimeQuery
